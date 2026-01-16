@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Scorer - 2 Over Match</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 25px;
+            font-size: 28px;
+        }
+
+        .scoreboard {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+        }
+
+        .score-display {
+            text-align: center;
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .over-info {
+            text-align: center;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+
+        .ball-tracker {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .ball {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .ball.runs-0 { background: #95a5a6; }
+        .ball.runs-1 { background: #3498db; }
+        .ball.runs-2 { background: #2ecc71; }
+        .ball.runs-3 { background: #f39c12; }
+        .ball.runs-4 { background: #e74c3c; }
+        .ball.runs-6 { background: #9b59b6; }
+        .ball.wicket { background: #c0392b; }
+        .ball.wide, .ball.noball { background: #16a085; }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-runs { background: #3498db; }
+        .btn-wicket { background: #e74c3c; }
+        .btn-extra { background: #f39c12; }
+        .btn-undo { background: #95a5a6; grid-column: span 2; }
+        .btn-reset { background: #2c3e50; }
+
+        .innings-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .innings-btn {
+            flex: 1;
+            padding: 12px;
+            background: #ecf0f1;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+
+        .innings-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .match-summary {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .match-summary h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            color: #34495e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏏 Cricket Scorer</h1>
+        
+        <div class="innings-selector">
+            <button class="innings-btn active" onclick="switchInnings(1)">Innings 1</button>
+            <button class="innings-btn" onclick="switchInnings(2)">Innings 2</button>
+        </div>
+
+        <div class="scoreboard">
+            <div class="score-display">
+                <span id="runs">0</span>/<span id="wickets">0</span>
+            </div>
+            <div class="over-info">
+                Over: <span id="currentOver">0.0</span> / 2.0
+            </div>
+            <div class="ball-tracker" id="ballTracker"></div>
+        </div>
+
+        <div class="controls">
+            <button class="btn-runs" onclick="addRuns(0)">0</button>
+            <button class="btn-runs" onclick="addRuns(1)">1</button>
+            <button class="btn-runs" onclick="addRuns(2)">2</button>
+            <button class="btn-runs" onclick="addRuns(3)">3</button>
+            <button class="btn-runs" onclick="addRuns(4)">4</button>
+            <button class="btn-runs" onclick="addRuns(6)">6</button>
+            <button class="btn-wicket" onclick="addWicket()">Wicket</button>
+            <button class="btn-extra" onclick="addWide()">Wide</button>
+            <button class="btn-extra" onclick="addNoBall()">No Ball</button>
+            <button class="btn-undo" onclick="undo()">↶ Undo</button>
+            <button class="btn-reset" onclick="resetMatch()">Reset</button>
+        </div>
+
+        <div class="match-summary">
+            <h3>Match Status</h3>
+            <div class="summary-row">
+                <span>Innings 1:</span>
+                <span id="innings1Summary">0/0 (0.0 overs)</span>
+            </div>
+            <div class="summary-row">
+                <span>Innings 2:</span>
+                <span id="innings2Summary">0/0 (0.0 overs)</span>
+            </div>
+            <div class="summary-row" id="result" style="font-weight: bold; color: #667eea;"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentInnings = 1;
+        let matchData = {
+            1: { runs: 0, wickets: 0, balls: 0, ballHistory: [] },
+            2: { runs: 0, wickets: 0, balls: 0, ballHistory: [] }
+        };
+
+        function getCurrentData() {
+            return matchData[currentInnings];
+        }
+
+        function updateDisplay() {
+            const data = getCurrentData();
+            document.getElementById('runs').textContent = data.runs;
+            document.getElementById('wickets').textContent = data.wickets;
+            
+            const overs = Math.floor(data.balls / 6);
+            const ballsInOver = data.balls % 6;
+            document.getElementById('currentOver').textContent = `${overs}.${ballsInOver}`;
+
+            updateBallTracker();
+            updateSummary();
+            checkMatchEnd();
+        }
+
+        function updateBallTracker() {
+            const data = getCurrentData();
+            const tracker = document.getElementById('ballTracker');
+            tracker.innerHTML = '';
+            
+            data.ballHistory.forEach(ball => {
+                const div = document.createElement('div');
+                div.className = `ball ${ball.class}`;
+                div.textContent = ball.display;
+                tracker.appendChild(div);
+            });
+        }
+
+        function addRuns(runs) {
+            const data = getCurrentData();
+            if (data.balls >= 12 || data.wickets >= 2) return;
+
+            data.runs += runs;
+            data.balls++;
+            data.ballHistory.push({
+                class: `runs-${runs}`,
+                display: runs,
+                type: 'runs',
+                value: runs
+            });
+
+            updateDisplay();
+        }
+
+        function addWicket() {
+            const data = getCurrentData();
+            if (data.balls >= 12 || data.wickets >= 2) return;
+
+            data.wickets++;
+            data.balls++;
+            data.ballHistory.push({
+                class: 'wicket',
+                display: 'W',
+                type: 'wicket'
+            });
+
+            updateDisplay();
+        }
+
+        function addWide() {
+            const data = getCurrentData();
+            if (data.balls >= 12 || data.wickets >= 2) return;
+
+            data.runs++;
+            data.ballHistory.push({
+                class: 'wide',
+                display: 'Wd',
+                type: 'wide'
+            });
+
+            updateDisplay();
+        }
+
+        function addNoBall() {
+            const data = getCurrentData();
+            if (data.balls >= 12 || data.wickets >= 2) return;
+
+            data.runs++;
+            data.ballHistory.push({
+                class: 'noball',
+                display: 'Nb',
+                type: 'noball'
+            });
+
+            updateDisplay();
+        }
+
+        function undo() {
+            const data = getCurrentData();
+            if (data.ballHistory.length === 0) return;
+
+            const lastBall = data.ballHistory.pop();
+
+            if (lastBall.type === 'runs') {
+                data.runs -= lastBall.value;
+                data.balls--;
+            } else if (lastBall.type === 'wicket') {
+                data.wickets--;
+                data.balls--;
+            } else if (lastBall.type === 'wide' || lastBall.type === 'noball') {
+                data.runs--;
+            }
+
+            updateDisplay();
+        }
+
+        function switchInnings(innings) {
+            currentInnings = innings;
+            
+            document.querySelectorAll('.innings-btn').forEach((btn, idx) => {
+                btn.classList.toggle('active', idx + 1 === innings);
+            });
+
+            updateDisplay();
+        }
+
+        function updateSummary() {
+            for (let i = 1; i <= 2; i++) {
+                const data = matchData[i];
+                const overs = Math.floor(data.balls / 6);
+                const ballsInOver = data.balls % 6;
+                const overDisplay = ballsInOver > 0 ? `${overs}.${ballsInOver}` : overs;
+                
+                document.getElementById(`innings${i}Summary`).textContent = 
+                    `${data.runs}/${data.wickets} (${overDisplay} overs)`;
+            }
+        }
+
+        function checkMatchEnd() {
+            const inn1 = matchData[1];
+            const inn2 = matchData[2];
+            const resultDiv = document.getElementById('result');
+
+            if (inn1.balls >= 12 || inn1.wickets >= 2) {
+                if (inn2.balls >= 12 || inn2.wickets >= 2 || inn2.runs > inn1.runs) {
+                    if (inn2.runs > inn1.runs) {
+                        resultDiv.textContent = `Team 2 wins by ${2 - inn2.wickets} wickets!`;
+                    } else if (inn1.runs > inn2.runs) {
+                        resultDiv.textContent = `Team 1 wins by ${inn1.runs - inn2.runs} runs!`;
+                    } else {
+                        resultDiv.textContent = 'Match Tied!';
+                    }
+                } else {
+                    resultDiv.textContent = `Target: ${inn1.runs + 1} runs`;
+                }
+            } else {
+                resultDiv.textContent = '';
+            }
+        }
+
+        function resetMatch() {
+            if (confirm('Reset the entire match?')) {
+                matchData = {
+                    1: { runs: 0, wickets: 0, balls: 0, ballHistory: [] },
+                    2: { runs: 0, wickets: 0, balls: 0, ballHistory: [] }
+                };
+                currentInnings = 1;
+                switchInnings(1);
+                updateDisplay();
+            }
+        }
+
+        updateDisplay();
+    </script>
+</body>
+</html>
